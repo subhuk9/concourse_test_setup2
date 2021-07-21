@@ -1,0 +1,36 @@
+---
+resource_types:
+  - name: npm-cache
+    type: docker-image
+    source:
+      repository: ymedlop/npm-cache-resource
+      tag: latest
+
+resources:
+  - name: concourse_test_setup2
+    type: git
+    source: &repo-source
+      uri: https://github.com/subhuk9/concourse_test_setup2
+      branch: main
+  - name: dependency-cache
+    type: npm-cache
+    source:
+      <<: *repo-source
+      paths:
+        - package.json
+
+jobs:
+  - name: Install dependencies
+    plan:
+      - get: concourse_test_setup2
+        trigger: true
+      - get: dependency-cache
+  - name: Run tests
+    plan:
+      - get: concourse_test_setup2
+        trigger: true
+        passed: [Install dependencies]
+      - get: dependency-cache
+        passed: [Install dependencies]
+      - task: run the test suite
+        file: concourse_test_setup2/ci/tasks/run_tests.yml
